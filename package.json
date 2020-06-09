@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "name": "architect-camp",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {
+    "lint": "lint-md ./ --fix"
+  },
+  "devDependencies": {
+    "husky": "^4.2.5",
+    "lint-md-cli": "^0.1.2"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn lint"
+    }
+  }
+}
