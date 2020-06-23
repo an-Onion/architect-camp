@@ -4,11 +4,15 @@
   "license": "MIT",
   "version": "1.0.0",
   "scripts": {
-    "lint": "lint-md ./ --fix"
+    "lint": "lint-md ./ --fix",
+    "lint:ts": "tslint --project ."
   },
   "devDependencies": {
     "husky": "^4.2.5",
-    "lint-md-cli": "^0.1.2"
+    "lint-md-cli": "^0.1.2",
+    "ts-node": "^8.10.2",
+    "tslint": "^6.1.2",
+    "typescript": "^3.9.5"
   },
   "husky": {
     "hooks": {
