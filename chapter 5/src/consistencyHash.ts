@@ -8,9 +8,9 @@ interface ConsistentHash {
 }
 
 export class ConsistentHashingWithVirtualNode implements ConsistentHash {
-  #virtualNodes: object;
+  #virtualNodes: Record<number, string>;
   #circle: HashCircle;
-  #hits: object;
+  #hits: Record<string, number>;
   #virtualSize: number;
 
   constructor(virtualSize: number){
@@ -20,7 +20,7 @@ export class ConsistentHashingWithVirtualNode implements ConsistentHash {
     this.#circle = new HashCircle();
   }
 
-  addNodes(ips: string[]) {
+  addNodes(ips: string[]): void {
     ips.forEach((ip) => {
       for(let i = 1; i <= this.#virtualSize; ++i) {
         const hash: number = fnv32Hash(`${ip}-${i}`)
@@ -30,18 +30,18 @@ export class ConsistentHashingWithVirtualNode implements ConsistentHash {
     })
   }
 
-  hitNode(key: string){
+  hitNode(key: string): string {
     const hitHash: number = this.#circle.hitHashNode(key);
     const ip: string = this.#virtualNodes[hitHash];
     this.#hits[ip] = this.#hits[ip]+1 || 1;
     return ip;
   }
 
-  printHits() {
+  printHits(): void {
     console.log(this.#hits);
   }
 
-  getStandardDeviation() {
+  getStandardDeviation(): number {
     const values = Object.values(this.#hits);
     return stdDev(values);
   }
@@ -49,9 +49,9 @@ export class ConsistentHashingWithVirtualNode implements ConsistentHash {
 
 
 export class ConsistentHashingWithoutVirtualNode  implements ConsistentHash {
-  #nodes: object;
+  #nodes: Record<number, string>;
   #circle: HashCircle;
-  #hits: object;
+  #hits: Record<string, number>;
 
   constructor(){
     this.#hits = {};
@@ -59,7 +59,7 @@ export class ConsistentHashingWithoutVirtualNode  implements ConsistentHash {
     this.#circle = new HashCircle();
   }
 
-  addNodes(ips: string[]) {
+  addNodes(ips: string[]): void {
     ips.forEach((ip) => {
       const hash: number = fnv32Hash(`${ip}-1`);
       this.#nodes[hash] = ip;
@@ -67,18 +67,18 @@ export class ConsistentHashingWithoutVirtualNode  implements ConsistentHash {
     })
   }
 
-  hitNode(key: string){
+  hitNode(key: string): string {
     const hitHash: number = this.#circle.hitHashNode(key);
     const ip: string = this.#nodes[hitHash];
     this.#hits[ip] = this.#hits[ip]+1 || 1;
     return ip;
   }
 
-  printHits() {
+  printHits(): void  {
     console.log(this.#hits);
   }
 
-  getStandardDeviation() {
+  getStandardDeviation(): number {
     const values =Object.values(this.#hits);
     return stdDev(values);
   }

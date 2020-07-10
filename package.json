@@ -5,16 +5,18 @@
   "version": "1.0.0",
   "scripts": {
     "lint": "lint-md ./ --fix",
-    "lint:ts": "tslint --project ."
+    "lint:ts": "eslint . --ext .ts"
   },
   "devDependencies": {
     "@types/ramda": "^0.27.10",
+    "@typescript-eslint/eslint-plugin": "^3.6.0",
+    "@typescript-eslint/parser": "^3.6.0",
     "collections": "^5.1.11",
+    "eslint": "^7.4.0",
     "husky": "^4.2.5",
     "lint-md-cli": "^0.1.2",
     "ramda": "^0.27.0",
     "ts-node": "^8.10.2",
-    "tslint": "^6.1.2",
     "typescript": "^3.9.5"
   },
   "husky": {

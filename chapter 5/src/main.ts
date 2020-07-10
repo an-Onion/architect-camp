@@ -1,5 +1,8 @@
 
-import { ConsistentHashingWithVirtualNode, ConsistentHashingWithoutVirtualNode } from './consistencyHash'
+import {
+  ConsistentHashingWithVirtualNode,
+  // ConsistentHashingWithoutVirtualNode,
+} from './consistencyHash'
 
 function getTenHashNodes() {
   return [...Array(10).keys()]
@@ -7,7 +10,7 @@ function getTenHashNodes() {
 }
 
 const runMillion = (virtualSize: number) => {
-  const ch: ConsistentHashingWithoutVirtualNode = new ConsistentHashingWithoutVirtualNode();
+  const ch: ConsistentHashingWithVirtualNode = new ConsistentHashingWithVirtualNode(virtualSize);
   ch.addNodes(getTenHashNodes());
 
   for(let i = 0; i < 1000_000; ++i){
@@ -18,7 +21,7 @@ const runMillion = (virtualSize: number) => {
   console.log(ch.getStandardDeviation());
 }
 
-runMillion(1)
+runMillion(150)
 
 
 

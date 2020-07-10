@@ -1,8 +1,8 @@
-const SortedSet = require('collections/sorted-set');
+import {SortedSet} from 'collections/sorted-set';
 
-export const fnv32Hash = (node: string) => {
-  const prime: number = 16777619;
-  const offset : number = 2166136261;
+export const fnv32Hash = (node: string): number => {
+  const prime = 16777619;
+  const offset  = 2166136261;
 
   let hash: number = node.split('')
                          .map((v) => v.charCodeAt(0))
@@ -17,7 +17,7 @@ export const fnv32Hash = (node: string) => {
   return Math.abs(hash);
 }
 
-export const stdDev = (data: number[]) => {
+export const stdDev = (data: number[]): number => {
   const sum = (x,y) => x+y;
   const square = (x) => x*x;
   const mean = data.reduce(sum) / data.length;
@@ -26,7 +26,7 @@ export const stdDev = (data: number[]) => {
 }
 
 export class HashCircle {
-  #set: any;
+  #set: SortedSet;
   constructor() {
     this.#set = new SortedSet()
   }
@@ -36,7 +36,7 @@ export class HashCircle {
     return this.#set.findLeastGreaterThanOrEqual(hash)?.value ?? this.#set.min();
   }
 
-  push(hashNodes: number) {
+  push(hashNodes: number): void {
     this.#set.push(hashNodes);
   }
 }
