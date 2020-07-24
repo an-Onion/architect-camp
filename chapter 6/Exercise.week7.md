@@ -71,41 +71,80 @@ export function fetch(url: string): Promise<number> {
 }
 ```
 
-### 返回结果
+### 并发池
 
-TS 的好处就是不用开多线程，它只有单线程，天然的异步语言；直接`Promise.all` 就可以发送一组异步请求了😅
-
-实现上如下：
-
-1. 先用请求总数 `/` 并发数计算轮数
-2. 每一轮用 `Promise.all(gets)` 并发请求
-3. `await` 该轮响应时间并保存结果
-4. 开始下一轮，重复步骤 2，直到结束
-
-`p.s.` 简单起见我没有对最后一轮不满足并发总数的情况进行处理，我想现实中也不会吧
+并发设计的思路很简单，就是建一个并发池；假设并发数为 10，就在这个并发池里放 10 个执行器——executor。TS 有个好处就是不用开多线程，天然的异步语言；直接 `Promise.all` 就可以并发执行池子里所有的 executor 了。
 
 ```typescript
-import {fetch} from './fetch';
-import {response_95, response_avg} from './utils';
+// concurrency = 10;
+while(concurrency--){
+  asyncPool.push( executor() );
+}
 
-async function getResult(url: string, concurrency: number, times: number) {
-  const costs: number[] = [];
-  const rounds: number = Math.ceil( times / concurrency );
+await Promise.all(asyncPool)
+```
 
-  for (let i = 0; i < rounds; i++) {
-    const gets: Promise<number>[] = [...Array(concurrency)].map(() => fetch(url));
-    const response:  number[] = await Promise.all(gets);
-    costs.push(...response);
-  }
+### 执行器
 
-  return {
-    avg: response_avg(costs),
-    res_95: response_95(costs),
-  };
+Executor 的设计，我用到了 `Promise-then` 可以串行执行异步函数的功能。通过递归调用，并发池里的 executor 就会不断地消费请求，直到完成目标请求数。
+
+```typescript
+function executor(requests: boolean []) {
+
+  const tail: boolean  = requests.pop();
+
+  if(tail === undefined) return;
+
+  return fetch(url)
+    .then(() => executor(requests));
 }
 ```
 
-最后，我试了一下百度的响应结果：`{ avg: 2661.06, res_95: 3801 }`， 平均要 2 秒多；感觉挺慢的，看了一下浏览器加载时间也差不多，应该是百度需要加载的资源太多了吧。我又测了一下自家的网站：`{ avg: 473.87, res_95: 657 }`，竟然比百度要快😂，总算我平日里没白忙活。
+这里的参数 `requests` 指的是所有请求的集合，方便起见我用了一个 boolean 数组表述。所有的 executor 都会竞争执行这个数组里的请求，直至为 0。
+
+### 返回结果
+
+把上述代码组合起来，就得到了一个统计输出函数了：
+
+`p.s.` executor 方法我多加了一个 rts 的参数，为的是保存每个请求的响应时间。
+
+```typescript
+async function getResult(args: {url: string, concurrency: number, times: number}) {
+
+  function executor(requests: boolean [], rts: number[] = []) {
+
+    const tail: boolean  = requests.pop();
+
+    if(!tail) return Promise.resolve(rts)
+
+    return fetch(args.url)
+      .then((rt) => executor(requests, [...rts, rt]));
+  }
+
+  const requests: boolean[] = [...Array(args.times)].fill(true);
+  const asyncPool: Promise<number[]>[] = [];
+  let limit: number = args.concurrency;
+
+  while( limit-- ) {
+    asyncPool.push( executor(requests) )
+  }
+
+  return Promise.all(asyncPool)
+    .then((rts) => {
+      const responseTimes: number[] = rts.flat()
+
+      return {
+        avg: response_avg(responseTimes),
+        res_95: response_95(responseTimes),
+      };
+    });
+}
+```
+
+附上 github 源码：[main.ts][3]
+
+最后，我试了一下百度的响应结果：`{ avg: 2511.72, res_95: 2854 }`， 平均要 2 秒多；感觉挺慢的，看了一下浏览器加载时间也差不多，应该是百度需要加载的资源太多了吧。我又测了一下自家的网站：`{ avg: 473.87, res_95: 657 }`，竟然比百度要快😂，总算我平日里没白忙活。
 
 [1]: ./img/concurrent.png
 [2]: https://github.com/axios/axios
+[3]: https://github.com/an-Onion/architect-camp/blob/master/chapter%206/src/main.ts

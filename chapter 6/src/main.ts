@@ -1,20 +1,42 @@
 import {fetch} from './fetch';
 import {response_95, response_avg} from './utils';
 
-async function getResult(url: string, concurrency: number, times: number) {
-  const costs: number[] = [];
-  const rounds: number = times / concurrency;
+function getResult(
+  args: {url: string, concurrency: number, times: number},
+  asyncHandler: (url: string) => Promise<number>,
+  ) {
 
-  for (let i = 0; i < rounds; i++) {
-    const gets: Promise<number>[] = [...Array(concurrency)].map(() => fetch(url));
-    const response:  number[] = await Promise.all(gets);
-    costs.push(...response);
+  function executor(requests: boolean [], rts: number[] = []) {
+
+    const tail: boolean  = requests.pop();
+
+    if(tail === undefined) return Promise.resolve(rts)
+
+    return asyncHandler(args.url)
+      .then((rt) => executor(requests, [...rts, rt]));
   }
 
-  return {
-    avg: response_avg(costs),
-    res_95: response_95(costs),
-  };
+  const asyncPool: Promise<number[]>[] = [];
+  const requests: boolean[] = [...Array(args.times)].fill(true);
+  let limit: number = args.concurrency;
+
+  while( limit-- ) {
+    asyncPool.push( executor(requests) )
+  }
+
+  return Promise.all(asyncPool)
+    .then((rts) => {
+
+      const responseTimes: number[] = rts.flat()
+
+      return {
+        avg: response_avg(responseTimes),
+        res_95: response_95(responseTimes),
+      };
+    });
 }
 
-getResult('https://www.baidu.com', 10, 100).then(console.log);
+getResult(
+  {url: 'https://www.baidu.com/', concurrency: 10, times: 100},
+  fetch,
+).then(console.log);
