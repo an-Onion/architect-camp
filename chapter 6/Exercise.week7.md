@@ -76,6 +76,7 @@ export function fetch(url: string): Promise<number> {
 并发设计的思路很简单，就是建一个并发池；假设并发数为 10，就在这个并发池里放 10 个执行器——executor。TS 有个好处就是不用开多线程，天然的异步语言；直接 `Promise.all` 就可以并发执行池子里所有的 executor 了。
 
 ```typescript
+const asyncPool: Promise<number[]>[] = [];
 // concurrency = 10;
 while(concurrency--){
   asyncPool.push( executor() );
@@ -89,39 +90,32 @@ await Promise.all(asyncPool)
 Executor 的设计，我用到了 `Promise-then` 可以串行执行异步函数的功能。通过递归调用，并发池里的 executor 就会不断地消费请求，直到完成目标请求数。
 
 ```typescript
-function executor(requests: boolean []) {
+type Request = () => Promise<number>;
 
-  const tail: boolean  = requests.pop();
+function executor(requests: Request [], rts: number[] = []) {
 
-  if(tail === undefined) return;
+  const req: Request  = requests.pop();
 
-  return fetch(url)
-    .then(() => executor(requests));
+  if(req === undefined) return Promise.resolve(rts)
+
+  return req().then((rt) => executor(requests, [...rts, rt]));
 }
 ```
 
-这里的参数 `requests` 指的是所有请求的集合，方便起见我用了一个 boolean 数组表述。所有的 executor 都会竞争执行这个数组里的请求，直至为 0。
+* 参数 `requests` 是所有请求的集合——函数数组；Request 是一个别名类型，代表一个返回 Promise 的函数。所有的 executor 都会竞争执行这个数组里的请求，直至为 0。
 
-### 返回结果
+* 另一个参数 rts 就是 Response Times 的缩写，目的是保存每个请求的响应时间。
+
+### 测试代码
 
 把上述代码组合起来，就得到了一个统计输出函数了：
 
-`p.s.` executor 方法我多加了一个 rts 的参数，为的是保存每个请求的响应时间。
-
 ```typescript
-async function getResult(args: {url: string, concurrency: number, times: number}) {
+function runConcurrencyTest(
+  args: {url: string, concurrency: number, times: number}
+  ) {
 
-  function executor(requests: boolean [], rts: number[] = []) {
-
-    const tail: boolean  = requests.pop();
-
-    if(!tail) return Promise.resolve(rts)
-
-    return fetch(args.url)
-      .then((rt) => executor(requests, [...rts, rt]));
-  }
-
-  const requests: boolean[] = [...Array(args.times)].fill(true);
+  const requests: Request[] = [...Array(args.times)].fill(() => fetch(args.url));
   const asyncPool: Promise<number[]>[] = [];
   let limit: number = args.concurrency;
 
@@ -131,6 +125,7 @@ async function getResult(args: {url: string, concurrency: number, times: number}
 
   return Promise.all(asyncPool)
     .then((rts) => {
+
       const responseTimes: number[] = rts.flat()
 
       return {

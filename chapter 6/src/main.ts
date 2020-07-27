@@ -1,23 +1,25 @@
 import {fetch} from './fetch';
 import {response_95, response_avg} from './utils';
 
-function getResult(
+type Request = () => Promise<number>;
+
+function executor(requests: Request [], rts: number[] = []) {
+
+  const req: Request  = requests.pop();
+
+  if(req === undefined) return Promise.resolve(rts)
+
+  return req().then((rt) => executor(requests, [...rts, rt]));
+}
+
+
+function runConcurrencyTest(
   args: {url: string, concurrency: number, times: number},
   asyncHandler: (url: string) => Promise<number>,
   ) {
 
-  function executor(requests: boolean [], rts: number[] = []) {
-
-    const tail: boolean  = requests.pop();
-
-    if(tail === undefined) return Promise.resolve(rts)
-
-    return asyncHandler(args.url)
-      .then((rt) => executor(requests, [...rts, rt]));
-  }
-
   const asyncPool: Promise<number[]>[] = [];
-  const requests: boolean[] = [...Array(args.times)].fill(true);
+  const requests: Request[] = [...Array(args.times)].fill(() => asyncHandler(args.url));
   let limit: number = args.concurrency;
 
   while( limit-- ) {
@@ -36,7 +38,7 @@ function getResult(
     });
 }
 
-getResult(
-  {url: 'https://www.baidu.com/', concurrency: 10, times: 100},
+runConcurrencyTest(
+  {url: 'https://www.baidu.com', concurrency: 10, times: 100},
   fetch,
 ).then(console.log);
