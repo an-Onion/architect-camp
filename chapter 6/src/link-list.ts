@@ -21,25 +21,16 @@ function lengthOf(list: LinkedNode): number {
 }
 
 function findTheMergedNode(list1: LinkedNode, list2: LinkedNode): LinkedNode {
-  const len1: number = lengthOf(list1);
-  const len2: number = lengthOf(list2);
+  const m: number = lengthOf(list1);
+  const n: number = lengthOf(list2);
 
-  let longList: LinkedNode, shortList: LinkedNode;
+  let [longList, shortList] = m > n ? [list1, list2] : [list2, list1];
 
-  if( len1 > len2 ) {
-    longList = list1;
-    shortList = list2;
-  } else {
-    longList = list2;
-    shortList = list1;
-  }
-
-  let delta: number = Math.abs(len1 - len2);
+  let delta: number = Math.abs(m - n);
 
   while( delta-- ) {
     longList = longList.next;
   }
-
   // Then the length of longList and shortList is the same
 
   while( longList ) {

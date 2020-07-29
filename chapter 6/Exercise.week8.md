@@ -6,13 +6,12 @@
 
 ![Double Link][1]
 
-
-1. 先计算两个链表的长度`len1`、`len2`，找到那个较长的链表（`longList`）
-2. 让 `longList` 的头指针向后移动 `abs(len1-len2)` 个节点；这样长、短链表就一样长了
-3. 然后挨个比较两个链表的头结点，如果一样则返回该节点；不一样则头结点分别往后移动一位
+1. 先计算两个链表的长度`m`、`n`，找到那个较长的链表（`longList`）
+2. 让 `longList` 的头指针向后移动 `abs(m-n)` 个节点；这样长、短链表就一样长了
+3. 然后挨个比较两个链表的头指针，如果一样则返回该节点；不一样则头指针分别往后移动一位
 4. 循环步骤 3，直到链表遍历结束
 
-若返回为 `null`, 则表示两链表未合并；反之，则为合并节点。
+若返回为 `null`, 则表示两链表未合并；反之，则为合并节点。时间复杂度是 `O(m+n)`，遍历了两遍链表嘛；空间复杂度`O(1)`，没有分配额外的空间。
 
 ```typescript
 class LinkedNode {
@@ -38,25 +37,16 @@ function lengthOf(list: LinkedNode): number {
 }
 
 function findTheMergedNode(list1: LinkedNode, list2: LinkedNode): LinkedNode {
-  const len1: number = lengthOf(list1);
-  const len2: number = lengthOf(list2);
+  const m: number = lengthOf(list1);
+  const n: number = lengthOf(list2);
 
-  let longList: LinkedNode, shortList: LinkedNode;
+  let [longList, shortList] = m > n ? [list1, list2] : [list2, list1];
 
-  if( len1 > len2 ) {
-    longList = list1;
-    shortList = list2;
-  } else {
-    longList = list2;
-    shortList = list1;
-  }
-
-  let delta: number = Math.abs(len1 - len2);
+  let delta: number = Math.abs(m - n);
 
   while( delta-- ) {
     longList = longList.next;
   }
-
   // Then the length of longList and shortList is the same
 
   while( longList ) {
@@ -76,8 +66,6 @@ function findTheMergedNode(list1: LinkedNode, list2: LinkedNode): LinkedNode {
 > 请画出 DataNode 服务器节点宕机的时候，HDFS 的处理过程时序图。
 
 ![HDFS][2]
-
-所以 namenode 如果在 10 分钟+30 秒后，仍然没有收到 datanode 的心跳，就认为 datanode 已经宕机，并标记为 dead
 
 [1]: ./img/double-link.png
 [2]: ./img/hdfs.drawio.png
