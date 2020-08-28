@@ -25,6 +25,8 @@
   "dependencies": {
     "axios": "^0.19.2",
     "collections": "^5.1.11",
+    "express": "^4.17.1",
+    "md5": "^2.3.0",
     "ramda": "^0.27.0"
   }
 }
